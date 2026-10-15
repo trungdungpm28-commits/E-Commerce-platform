@@ -11,7 +11,7 @@
 // =====================================================================
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
@@ -155,17 +155,17 @@ model User {
   createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  addresses         Address[]
-  otpCodes          OtpCode[]
-  refreshTokens     RefreshToken[]
-  shop              Shop?
-  cart              Cart?
-  orders            Order[]
-  voucherUsages     VoucherUsage[]
-  reviews           Review[]
-  returnsRequested  ReturnRequest[]      @relation("ReturnRequestedBy")
-  returnsResolved   ReturnRequest[]      @relation("ReturnResolvedBy")
-  statusChanges     OrderStatusHistory[]
+  addresses        Address[]
+  otpCodes         OtpCode[]
+  refreshTokens    RefreshToken[]
+  shop             Shop?
+  cart             Cart?
+  orders           Order[]
+  voucherUsages    VoucherUsage[]
+  reviews          Review[]
+  returnsRequested ReturnRequest[]      @relation("ReturnRequestedBy")
+  returnsResolved  ReturnRequest[]      @relation("ReturnResolvedBy")
+  statusChanges    OrderStatusHistory[]
 
   @@map("users")
 }
@@ -295,10 +295,10 @@ model Category {
 }
 
 model Brand {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique @db.VarChar(100)
-  logoUrl   String?   @map("logo_url") @db.VarChar(500)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  logoUrl   String?  @map("logo_url") @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   products Product[]
 
