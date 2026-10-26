@@ -4,4 +4,3 @@ node_modules
 dist
 src/generated
 .mcp.json
-.mcp.json
