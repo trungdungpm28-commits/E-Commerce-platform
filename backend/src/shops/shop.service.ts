@@ -101,4 +101,31 @@ export class ShopService {
       data: { status: dto.status },
     });
   }
+
+  async deleteMyShop(userId: number) {
+    const shop = await this.prisma.shop.findUnique({
+      where: { ownerId: userId },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Cửa hàng này không tồn tại');
+    }
+
+    return this.prisma.shop.delete({
+      where: { id: shop.id },
+    });
+  }
+
+  async deleteShop(shopId: number) {
+    const shop = await this.prisma.shop.findUnique({
+      where: { id: shopId },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Cửa hàng này không tôồn tại');
+    }
+    return this.prisma.shop.delete({
+      where: { id: shopId },
+    })
+  }
 }

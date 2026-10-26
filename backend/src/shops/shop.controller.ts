@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import {Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards} from '@nestjs/common';
 import { UserRole as Role } from '../generated/prisma';
 import { GetUser } from '../auth/decorator/get-user.decorator';
 import { Roles } from '../auth/decorator/roles.decorator';
@@ -47,5 +47,16 @@ export class ShopController {
     @Body() dto: UpdateShopStatusDto,
   ) {
     return this.shopService.updateShopStatus(shopId, dto);
+  }
+  //delete shop
+  @Delete('my-shop')
+  deleteShop(@GetUser('id') userId: number) {
+    return this.shopService.deleteMyShop(userId);
+  }
+
+  @Roles(Role.ADMIN)
+  @Delete(':id')
+  deleteMyShop(@Param('id' , ParseIntPipe) shopId: number) {
+    return this.shopService.deleteShop(shopId);
   }
 }

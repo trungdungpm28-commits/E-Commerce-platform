@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {BadRequestException, Injectable, NotFoundException} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { EditUserDto } from './dto/edit-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -63,4 +63,31 @@ export class UserService {
       orderBy: { isDefault: 'desc' },
     });
   }
+
+  async deleteMe(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if(!user) {
+      throw new NotFoundException('Người dùng này không tồn tại');
+    }
+
+    return this.prisma.user.delete({
+      where: { id: userId },
+    });
+  }
+    async deleteUser(userId: number) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if(!user) {
+        throw new NotFoundException('Người dùng này không tồn tại');
+      }
+
+      return this.prisma.user.delete({
+        where: { id: userId },
+      });
+    }
 }
