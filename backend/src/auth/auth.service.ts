@@ -33,7 +33,7 @@ export class AuthService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          throw new ForbiddenException('Email này đã được sử dụng');
+          throw new ForbiddenException('Email hoặc số điện thoại này đã được sử dụng');
         }
       }
       throw error;

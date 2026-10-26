@@ -2,9 +2,10 @@ import axios, { type AxiosError } from 'axios';
 
 export const ACCESS_TOKEN_KEY = 'access_token';
 export const SESSION_EXPIRED_EVENT = 'auth:session-expired';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim() || 'http://localhost:3000';
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -30,8 +31,9 @@ apiClient.interceptors.response.use(
 export function getApiErrorMessage(error: unknown, fallback: string): string {
   if (!axios.isAxiosError(error)) return fallback;
 
+  const status = error.response?.status;
   const data: unknown = error.response?.data;
-  if (data && typeof data === 'object' && 'message' in data) {
+  if ((status === 400 || status === 422) && data && typeof data === 'object' && 'message' in data) {
     const message = data.message;
     if (typeof message === 'string') return message;
     if (Array.isArray(message)) {
@@ -39,6 +41,19 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
     }
   }
 
-  if (!error.response) return 'Unable to reach the server. Check your connection and try again.';
+  if (!error.response) {
+    return 'Can’t connect to the API. Start the backend and check VITE_API_BASE_URL.';
+  }
+  if (status === 403 || status === 409) {
+    const message = data && typeof data === 'object' && 'message' in data ? data.message : undefined;
+    if (typeof message === 'string' && message.includes('đã được sử dụng')) {
+      return 'An account already uses this email or phone number.';
+    }
+    return 'This account could not be created. Check whether the email or phone number is already registered.';
+  }
+  if (status === 404) return 'The signup endpoint was not found. Check the backend route and API base URL.';
+  if (status !== undefined && status >= 500) {
+    return 'The server could not complete signup. Check the backend and database logs.';
+  }
   return fallback;
 }

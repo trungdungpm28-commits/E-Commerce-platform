@@ -11,12 +11,16 @@ The signup design has no visible phone field or submit button, while the actual 
 ## Run locally
 
 ```sh
-npm install
-cp .env.example .env
-npm run dev
+npm --prefix frontend install
+cp frontend/.env.example frontend/.env
+npm --prefix frontend run dev
 ```
 
-Set `VITE_API_BASE_URL` to the backend origin. The repository's backend does not contain an application bootstrap or a configured port, route prefix, or CORS policy; `.env.example` uses the conventional NestJS local port `3000` as a starting value, not a verified backend URL. The browser origin must be permitted by backend CORS configuration.
+Set `VITE_API_BASE_URL` to the backend origin. If it is missing, the client defaults to `http://localhost:3000`, matching the example. Vite must be restarted after changing `.env`.
+
+### Backend/database setup
+
+The backend uses NestJS and the existing Prisma PostgreSQL schema/migrations. See [backend/README.md](../backend/README.md) for local PostgreSQL Compose setup, environment variables, migrations, startup scripts, and safe verification commands. The backend requires `DATABASE_URL` and `JWT_SECRET` in its ignored local `.env`.
 
 ## Routes and authentication
 

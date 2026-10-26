@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 import { UserRole as Role } from '../../generated/prisma';
 
 export class SignupDto {
@@ -13,6 +13,7 @@ export class SignupDto {
 
   @IsString()
   @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
+  @Matches(/^0[35789]\d{8}$/, { message: 'Số điện thoại phải là số Việt Nam gồm 10 chữ số' })
   phone: string;
 
   @IsString()

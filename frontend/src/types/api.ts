@@ -78,7 +78,7 @@ export interface Category {
   id: number;
   parentId: number | null;
   name: string;
-  slug: string;
+  slug: string | null;
   isLeaf: boolean;
   isActive: boolean;
   createdAt: string;

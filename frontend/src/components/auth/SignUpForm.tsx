@@ -57,7 +57,17 @@ export function SignUpForm() {
       </div>
       <div className="field">
         <label htmlFor="signup-phone">Phone number</label>
-        <input id="signup-phone" name="phone" type="tel" autoComplete="tel" maxLength={10} required />
+        <input
+          id="signup-phone"
+          name="phone"
+          type="tel"
+          autoComplete="tel"
+          inputMode="numeric"
+          maxLength={10}
+          pattern="0[35789][0-9]{8}"
+          title="Enter a Vietnamese phone number with 10 digits."
+          required
+        />
       </div>
       <PasswordField id="signup-password" name="password" label="Password" autoComplete="new-password" minLength={6} />
       {(error ?? authError) && <p className="form-error" role="alert">{error ?? authError}</p>}

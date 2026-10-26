@@ -12389,7 +12389,7 @@ export namespace Prisma {
     isLeaf: boolean
     isActive: boolean
     createdAt: Date
-    slug: string
+    slug: string | null
     _count: CategoryCountAggregateOutputType | null
     _avg: CategoryAvgAggregateOutputType | null
     _sum: CategorySumAggregateOutputType | null
@@ -12485,7 +12485,7 @@ export namespace Prisma {
       isLeaf: boolean
       isActive: boolean
       createdAt: Date
-      slug: string
+      slug: string | null
     }, ExtArgs["result"]["category"]>
     composites: {}
   }
@@ -34135,7 +34135,7 @@ export namespace Prisma {
     isLeaf?: BoolFilter<"Category"> | boolean
     isActive?: BoolFilter<"Category"> | boolean
     createdAt?: DateTimeFilter<"Category"> | Date | string
-    slug?: StringFilter<"Category"> | string
+    slug?: StringNullableFilter<"Category"> | string | null
     parent?: XOR<CategoryNullableScalarRelationFilter, CategoryWhereInput> | null
     children?: CategoryListRelationFilter
     products?: ProductListRelationFilter
@@ -34148,7 +34148,7 @@ export namespace Prisma {
     isLeaf?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
-    slug?: SortOrder
+    slug?: SortOrderInput | SortOrder
     parent?: CategoryOrderByWithRelationInput
     children?: CategoryOrderByRelationAggregateInput
     products?: ProductOrderByRelationAggregateInput
@@ -34178,7 +34178,7 @@ export namespace Prisma {
     isLeaf?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
-    slug?: SortOrder
+    slug?: SortOrderInput | SortOrder
     _count?: CategoryCountOrderByAggregateInput
     _avg?: CategoryAvgOrderByAggregateInput
     _max?: CategoryMaxOrderByAggregateInput
@@ -34196,7 +34196,7 @@ export namespace Prisma {
     isLeaf?: BoolWithAggregatesFilter<"Category"> | boolean
     isActive?: BoolWithAggregatesFilter<"Category"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Category"> | Date | string
-    slug?: StringWithAggregatesFilter<"Category"> | string
+    slug?: StringNullableWithAggregatesFilter<"Category"> | string | null
   }
 
   export type BrandWhereInput = {
@@ -36167,7 +36167,7 @@ export namespace Prisma {
     isLeaf?: boolean
     isActive?: boolean
     createdAt?: Date | string
-    slug: string
+    slug?: string | null
     parent?: CategoryCreateNestedOneWithoutChildrenInput
     children?: CategoryCreateNestedManyWithoutParentInput
     products?: ProductCreateNestedManyWithoutCategoryInput
@@ -36180,7 +36180,7 @@ export namespace Prisma {
     isLeaf?: boolean
     isActive?: boolean
     createdAt?: Date | string
-    slug: string
+    slug?: string | null
     children?: CategoryUncheckedCreateNestedManyWithoutParentInput
     products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
   }
@@ -36190,7 +36190,7 @@ export namespace Prisma {
     isLeaf?: BoolFieldUpdateOperationsInput | boolean
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    slug?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     parent?: CategoryUpdateOneWithoutChildrenNestedInput
     children?: CategoryUpdateManyWithoutParentNestedInput
     products?: ProductUpdateManyWithoutCategoryNestedInput
@@ -36203,7 +36203,7 @@ export namespace Prisma {
     isLeaf?: BoolFieldUpdateOperationsInput | boolean
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    slug?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     children?: CategoryUncheckedUpdateManyWithoutParentNestedInput
     products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
   }
@@ -36215,7 +36215,7 @@ export namespace Prisma {
     isLeaf?: boolean
     isActive?: boolean
     createdAt?: Date | string
-    slug: string
+    slug?: string | null
   }
 
   export type CategoryUpdateManyMutationInput = {
@@ -36223,7 +36223,7 @@ export namespace Prisma {
     isLeaf?: BoolFieldUpdateOperationsInput | boolean
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    slug?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type CategoryUncheckedUpdateManyInput = {
@@ -36233,7 +36233,7 @@ export namespace Prisma {
     isLeaf?: BoolFieldUpdateOperationsInput | boolean
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    slug?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type BrandCreateInput = {
@@ -44066,7 +44066,7 @@ export namespace Prisma {
     isLeaf?: boolean
     isActive?: boolean
     createdAt?: Date | string
-    slug: string
+    slug?: string | null
     parent?: CategoryCreateNestedOneWithoutChildrenInput
     products?: ProductCreateNestedManyWithoutCategoryInput
   }
@@ -44078,7 +44078,7 @@ export namespace Prisma {
     isLeaf?: boolean
     isActive?: boolean
     createdAt?: Date | string
-    slug: string
+    slug?: string | null
     products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
   }
 
@@ -44092,7 +44092,7 @@ export namespace Prisma {
     isLeaf?: boolean
     isActive?: boolean
     createdAt?: Date | string
-    slug: string
+    slug?: string | null
     children?: CategoryCreateNestedManyWithoutParentInput
     products?: ProductCreateNestedManyWithoutCategoryInput
   }
@@ -44103,7 +44103,7 @@ export namespace Prisma {
     isLeaf?: boolean
     isActive?: boolean
     createdAt?: Date | string
-    slug: string
+    slug?: string | null
     children?: CategoryUncheckedCreateNestedManyWithoutParentInput
     products?: ProductUncheckedCreateNestedManyWithoutCategoryInput
   }
@@ -44175,7 +44175,7 @@ export namespace Prisma {
     isLeaf?: BoolFieldUpdateOperationsInput | boolean
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    slug?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     parent?: CategoryUpdateOneWithoutChildrenNestedInput
     products?: ProductUpdateManyWithoutCategoryNestedInput
   }
@@ -44187,7 +44187,7 @@ export namespace Prisma {
     isLeaf?: BoolFieldUpdateOperationsInput | boolean
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    slug?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
   }
 
@@ -44217,7 +44217,7 @@ export namespace Prisma {
     isLeaf?: BoolFilter<"Category"> | boolean
     isActive?: BoolFilter<"Category"> | boolean
     createdAt?: DateTimeFilter<"Category"> | Date | string
-    slug?: StringFilter<"Category"> | string
+    slug?: StringNullableFilter<"Category"> | string | null
   }
 
   export type ProductUpsertWithWhereUniqueWithoutCategoryInput = {
@@ -44332,7 +44332,7 @@ export namespace Prisma {
     isLeaf?: boolean
     isActive?: boolean
     createdAt?: Date | string
-    slug: string
+    slug?: string | null
     parent?: CategoryCreateNestedOneWithoutChildrenInput
     children?: CategoryCreateNestedManyWithoutParentInput
   }
@@ -44344,7 +44344,7 @@ export namespace Prisma {
     isLeaf?: boolean
     isActive?: boolean
     createdAt?: Date | string
-    slug: string
+    slug?: string | null
     children?: CategoryUncheckedCreateNestedManyWithoutParentInput
   }
 
@@ -44526,7 +44526,7 @@ export namespace Prisma {
     isLeaf?: BoolFieldUpdateOperationsInput | boolean
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    slug?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     parent?: CategoryUpdateOneWithoutChildrenNestedInput
     children?: CategoryUpdateManyWithoutParentNestedInput
   }
@@ -44538,7 +44538,7 @@ export namespace Prisma {
     isLeaf?: BoolFieldUpdateOperationsInput | boolean
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    slug?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     children?: CategoryUncheckedUpdateManyWithoutParentNestedInput
   }
 
@@ -48700,7 +48700,7 @@ export namespace Prisma {
     isLeaf?: boolean
     isActive?: boolean
     createdAt?: Date | string
-    slug: string
+    slug?: string | null
   }
 
   export type ProductCreateManyCategoryInput = {
@@ -48721,7 +48721,7 @@ export namespace Prisma {
     isLeaf?: BoolFieldUpdateOperationsInput | boolean
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    slug?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     children?: CategoryUpdateManyWithoutParentNestedInput
     products?: ProductUpdateManyWithoutCategoryNestedInput
   }
@@ -48732,7 +48732,7 @@ export namespace Prisma {
     isLeaf?: BoolFieldUpdateOperationsInput | boolean
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    slug?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     children?: CategoryUncheckedUpdateManyWithoutParentNestedInput
     products?: ProductUncheckedUpdateManyWithoutCategoryNestedInput
   }
@@ -48743,7 +48743,7 @@ export namespace Prisma {
     isLeaf?: BoolFieldUpdateOperationsInput | boolean
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    slug?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ProductUpdateWithoutCategoryInput = {

@@ -2,6 +2,8 @@
   "compilerOptions": {
     "target": "es2021",
     "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "esModuleInterop": true,
@@ -9,7 +11,9 @@
     "forceConsistentCasingInFileNames": true,
     "strict": false,
     "types": ["node"],
-    "ignoreDeprecations": "6.0"
+    "ignoreDeprecations": "6.0",
+    "noEmitOnError": true
   },
-  "include": ["src/**/*", "Module/**/*", "prisma/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

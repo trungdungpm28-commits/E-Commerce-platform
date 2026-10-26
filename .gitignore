@@ -3,3 +3,5 @@ node_modules
 .DS_Store
 dist
 src/generated
+.mcp.json
+.mcp.json

@@ -284,7 +284,7 @@ model Category {
   isLeaf    Boolean  @default(true) @map("is_leaf")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  slug      String   @unique
+  slug      String?  @unique
 
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
   children Category[] @relation("CategoryTree")
