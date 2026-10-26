@@ -1,0 +1,636 @@
+// =====================================================================
+// PRISMA SCHEMA - SÀN THƯƠNG MẠI ĐIỆN TỬ (PostgreSQL)
+//
+// Lưu ý: nếu repo đã có sẵn khối generator/datasource trong schema.prisma,
+// hãy GIỮ khối cũ của repo và chỉ chép phần enum + model bên dưới.
+// (Prisma 7: chuỗi kết nối DATABASE_URL khai báo trong prisma.config.ts,
+//  không khai báo `url` trong khối datasource.)
+//
+// Những thứ Prisma KHÔNG biểu diễn được (CHECK, trigger, view, partial index)
+// nằm trong migration "constraints_triggers_views".
+// =====================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------
+enum UserRole {
+  BUYER
+  SELLER
+  ADMIN
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  PENDING_VERIFY
+  ACTIVE
+  LOCKED
+
+  @@map("user_status")
+}
+
+enum OtpPurpose {
+  REGISTER
+  RESET_PASSWORD
+
+  @@map("otp_purpose")
+}
+
+enum ShopStatus {
+  ACTIVE
+  SUSPENDED
+
+  @@map("shop_status")
+}
+
+enum ProductStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  HIDDEN
+  REJECTED
+
+  @@map("product_status")
+}
+
+enum VariantStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("variant_status")
+}
+
+enum PaymentMethod {
+  COD
+  VNPAY
+  MOMO
+  CREDIT_CARD
+
+  @@map("payment_method")
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+  REFUNDED
+
+  @@map("payment_status")
+}
+
+enum VoucherType {
+  PERCENT
+  FIXED_AMOUNT
+
+  @@map("voucher_type")
+}
+
+enum ReservationStatus {
+  RESERVED
+  CONFIRMED
+  RELEASED
+
+  @@map("reservation_status")
+}
+
+enum WalletTxType {
+  REVENUE
+  REFUND
+  WITHDRAW
+  ADJUSTMENT
+
+  @@map("wallet_tx_type")
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  REFUNDED
+  DISPUTED
+
+  @@map("return_status")
+}
+
+/// Vòng đời đơn hàng (mục 4.4 tài liệu). Tài liệu dùng cả PENDING_PAYMENT lẫn
+/// PENDING_CONFIRMATION nên giữ cả hai, đội nên thống nhất lại khi code.
+enum OrderStatus {
+  PENDING_PAYMENT
+  PENDING_CONFIRMATION
+  PROCESSING
+  CONFIRMED
+  PACKING
+  PICKED_UP
+  SHIPPING
+  DELIVERED
+  COMPLETED
+  CANCELLED
+
+  @@map("order_status")
+}
+
+// ---------------------------------------------------------------------
+// 1. TÀI KHOẢN & XÁC THỰC (UC-01 → UC-04)
+// ---------------------------------------------------------------------
+model User {
+  id               Int        @id @default(autoincrement())
+  fullname         String     @db.VarChar(50)
+  email            String     @unique @db.VarChar(255)
+  phone            String     @unique @db.VarChar(10)
+  passwordHash     String?    @map("password_hash") @db.VarChar(255)
+  googleId         String?    @unique @map("google_id") @db.VarChar(100)
+  role             UserRole   @default(BUYER)
+  status           UserStatus @default(PENDING_VERIFY)
+  failedLoginCount Int        @default(0) @map("failed_login_count")
+  loginLockedUntil DateTime?  @map("login_locked_until") @db.Timestamptz(6)
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  addresses        Address[]
+  otpCodes         OtpCode[]
+  refreshTokens    RefreshToken[]
+  shop             Shop?
+  cart             Cart?
+  orders           Order[]
+  voucherUsages    VoucherUsage[]
+  reviews          Review[]
+  returnsRequested ReturnRequest[]      @relation("ReturnRequestedBy")
+  returnsResolved  ReturnRequest[]      @relation("ReturnResolvedBy")
+  statusChanges    OrderStatusHistory[]
+
+  @@map("users")
+}
+
+model Address {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  receiverName String   @map("receiver_name") @db.VarChar(100)
+  phone        String   @db.VarChar(10)
+  province     String   @db.VarChar(100)
+  district     String   @db.VarChar(100)
+  ward         String   @db.VarChar(100)
+  detail       String   @db.VarChar(255)
+  isDefault    Boolean  @default(false) @map("is_default")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+/// OTP đăng ký / quên mật khẩu: hiệu lực 5 phút, sai tối đa 5 lần, khóa 30 phút
+model OtpCode {
+  id             Int        @id @default(autoincrement())
+  userId         Int        @map("user_id")
+  purpose        OtpPurpose
+  codeHash       String     @map("code_hash") @db.VarChar(255)
+  expiresAt      DateTime   @map("expires_at") @db.Timestamptz(6)
+  failedAttempts Int        @default(0) @map("failed_attempts") @db.SmallInt
+  lockedUntil    DateTime?  @map("locked_until") @db.Timestamptz(6)
+  usedAt         DateTime?  @map("used_at") @db.Timestamptz(6)
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt(sort: Desc)])
+  @@map("otp_codes")
+}
+
+model RefreshToken {
+  id         Int       @id @default(autoincrement())
+  userId     Int       @map("user_id")
+  tokenHash  String    @unique @map("token_hash") @db.VarChar(255)
+  deviceInfo String?   @map("device_info") @db.VarChar(255)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ---------------------------------------------------------------------
+// 2. CỬA HÀNG & VÍ NGƯỜI BÁN
+// ---------------------------------------------------------------------
+model Shop {
+  id          Int        @id @default(autoincrement())
+  ownerId     Int        @unique @map("owner_id")
+  name        String     @unique @db.VarChar(100)
+  description String?
+  logoUrl     String?    @map("logo_url") @db.VarChar(500)
+  isMall      Boolean    @default(false) @map("is_mall")
+  status      ShopStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  owner     User       @relation(fields: [ownerId], references: [id])
+  products  Product[]
+  vouchers  Voucher[]
+  wallet    Wallet?
+  subOrders SubOrder[]
+
+  @@map("shops")
+}
+
+model Wallet {
+  id        Int      @id @default(autoincrement())
+  shopId    Int      @unique @map("shop_id")
+  balance   BigInt   @default(0)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  shop         Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+/// Giao dịch ví người bán. amount dương = cộng, âm = trừ
+model WalletTransaction {
+  id         Int          @id @default(autoincrement())
+  walletId   Int          @map("wallet_id")
+  subOrderId Int?         @map("sub_order_id")
+  type       WalletTxType
+  amount     BigInt
+  note       String?      @db.VarChar(255)
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  wallet   Wallet    @relation(fields: [walletId], references: [id])
+  subOrder SubOrder? @relation(fields: [subOrderId], references: [id])
+
+  @@index([walletId, createdAt(sort: Desc)])
+  @@map("wallet_transactions")
+}
+
+// ---------------------------------------------------------------------
+// 3. DANH MỤC & SẢN PHẨM (UC-05 → UC-08)
+// ---------------------------------------------------------------------
+model Category {
+  id        Int      @id @default(autoincrement())
+  parentId  Int?     @map("parent_id")
+  name      String   @db.VarChar(100)
+  isLeaf    Boolean  @default(true) @map("is_leaf")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  slug      String   @unique
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@unique([parentId, name])
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Brand {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  logoUrl   String?  @map("logo_url") @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  products Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id           Int           @id @default(autoincrement())
+  shopId       Int           @map("shop_id")
+  categoryId   Int           @map("category_id")
+  brandId      Int?          @map("brand_id")
+  name         String        @db.VarChar(120)
+  description  String        @db.Text
+  status       ProductStatus @default(PENDING_APPROVAL)
+  rejectReason String?       @map("reject_reason") @db.VarChar(500)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  slug         String?
+
+  shop     Shop             @relation(fields: [shopId], references: [id])
+  category Category         @relation(fields: [categoryId], references: [id])
+  brand    Brand?           @relation(fields: [brandId], references: [id])
+  images   ProductImage[]
+  variants ProductVariant[]
+  reviews  Review[]
+
+  @@unique([id, shopId]) // phục vụ khóa ngoại kép từ ProductVariant
+  @@index([shopId])
+  @@index([categoryId])
+  @@index([status])
+  @@map("products")
+}
+
+model ProductImage {
+  id        Int     @id @default(autoincrement())
+  productId Int     @map("product_id")
+  url       String  @db.VarChar(500)
+  isCover   Boolean @default(false) @map("is_cover")
+  sortOrder Int     @default(0) @map("sort_order") @db.SmallInt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+/// Biến thể SKU. Tồn kho khả dụng = stockQuantity - reservedStock (tính ở code hoặc view)
+model ProductVariant {
+  id            Int           @id @default(autoincrement())
+  productId     Int           @map("product_id")
+  shopId        Int           @map("shop_id") // sao chép từ Product để sku_code duy nhất trong shop
+  skuCode       String        @map("sku_code") @db.VarChar(50)
+  variantName   String?       @map("variant_name") @db.VarChar(150)
+  price         BigInt
+  salePrice     BigInt?       @map("sale_price")
+  stockQuantity Int           @default(0) @map("stock_quantity")
+  reservedStock Int           @default(0) @map("reserved_stock")
+  weightGram    Int           @map("weight_gram")
+  maxPerOrder   Int           @default(20) @map("max_per_order") @db.SmallInt
+  status        VariantStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  color         String?
+  size          String?
+
+  product      Product            @relation(fields: [productId, shopId], references: [id, shopId], onDelete: Cascade)
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  reservations StockReservation[]
+
+  @@unique([shopId, skuCode])
+  @@index([productId])
+  @@map("product_variants")
+}
+
+// ---------------------------------------------------------------------
+// 4. KHUYẾN MÃI (UC-11)
+// ---------------------------------------------------------------------
+model Voucher {
+  id            Int         @id @default(autoincrement())
+  shopId        Int?        @map("shop_id") // NULL = voucher của sàn
+  code          String      @unique @db.VarChar(30)
+  discountType  VoucherType @map("discount_type")
+  discountValue BigInt      @map("discount_value")
+  maxDiscount   BigInt?     @map("max_discount")
+  minOrderValue BigInt      @default(0) @map("min_order_value")
+  startAt       DateTime    @map("start_at") @db.Timestamptz(6)
+  endAt         DateTime    @map("end_at") @db.Timestamptz(6)
+  usageLimit    Int         @map("usage_limit")
+  usedCount     Int         @default(0) @map("used_count")
+  isActive      Boolean     @default(true) @map("is_active")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  shop           Shop?          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  platformOrders Order[]        @relation("PlatformVoucher")
+  subOrders      SubOrder[]     @relation("ShopVoucher")
+  usages         VoucherUsage[]
+
+  @@map("vouchers")
+}
+
+// ---------------------------------------------------------------------
+// 5. GIỎ HÀNG (UC-09, UC-10)
+// Nhóm theo shop suy ra qua variant -> product -> shop.
+// ---------------------------------------------------------------------
+model Cart {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique @map("user_id")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id         Int      @id @default(autoincrement())
+  cartId     Int      @map("cart_id")
+  variantId  Int      @map("variant_id")
+  quantity   Int      @db.SmallInt
+  isSelected Boolean  @default(true) @map("is_selected")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, variantId])
+  @@map("cart_items")
+}
+
+// ---------------------------------------------------------------------
+// 6. ĐƠN HÀNG (UC-12 → UC-19)
+// Order = đơn cha (1 lần checkout), SubOrder = đơn con theo từng shop
+// ---------------------------------------------------------------------
+model Order {
+  id                Int           @id @default(autoincrement())
+  orderCode         String        @unique @map("order_code") @db.VarChar(30)
+  buyerId           Int           @map("buyer_id")
+  paymentMethod     PaymentMethod @map("payment_method")
+  platformVoucherId Int?          @map("platform_voucher_id")
+  // Ảnh chụp địa chỉ tại thời điểm đặt
+  receiverName      String        @map("receiver_name") @db.VarChar(100)
+  receiverPhone     String        @map("receiver_phone") @db.VarChar(10)
+  shipProvince      String        @map("ship_province") @db.VarChar(100)
+  shipDistrict      String        @map("ship_district") @db.VarChar(100)
+  shipWard          String        @map("ship_ward") @db.VarChar(100)
+  shipDetail        String        @map("ship_detail") @db.VarChar(255)
+  // Tổng tiền = Tiền hàng + Phí vận chuyển - Khuyến mãi (backend tự tính)
+  itemsTotal        BigInt        @map("items_total")
+  shippingTotal     BigInt        @default(0) @map("shipping_total")
+  discountTotal     BigInt        @default(0) @map("discount_total")
+  grandTotal        BigInt        @map("grand_total")
+  idempotencyKey    String?       @unique @map("idempotency_key") @db.VarChar(100)
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  buyer           User               @relation(fields: [buyerId], references: [id])
+  platformVoucher Voucher?           @relation("PlatformVoucher", fields: [platformVoucherId], references: [id])
+  subOrders       SubOrder[]
+  payments        Payment[]
+  reservations    StockReservation[]
+  voucherUsages   VoucherUsage[]
+
+  @@index([buyerId, createdAt(sort: Desc)])
+  @@map("orders")
+}
+
+model SubOrder {
+  id              Int         @id @default(autoincrement())
+  orderId         Int         @map("order_id")
+  shopId          Int         @map("shop_id")
+  shopVoucherId   Int?        @map("shop_voucher_id")
+  status          OrderStatus @default(PENDING_PAYMENT)
+  itemsTotal      BigInt      @map("items_total")
+  shippingFee     BigInt      @default(0) @map("shipping_fee")
+  discountAmount  BigInt      @default(0) @map("discount_amount")
+  totalAmount     BigInt      @map("total_amount")
+  carrier         String?     @db.VarChar(30)
+  trackingCode    String?     @map("tracking_code") @db.VarChar(50)
+  deliveredAt     DateTime?   @map("delivered_at") @db.Timestamptz(6)
+  completedAt     DateTime?   @map("completed_at") @db.Timestamptz(6)
+  cancelledReason String?     @map("cancelled_reason") @db.VarChar(255)
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  order              Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shop               Shop                 @relation(fields: [shopId], references: [id])
+  shopVoucher        Voucher?             @relation("ShopVoucher", fields: [shopVoucherId], references: [id])
+  items              OrderItem[]
+  history            OrderStatusHistory[]
+  walletTransactions WalletTransaction[]
+  returnRequests     ReturnRequest[]
+
+  @@unique([orderId, shopId])
+  @@index([shopId, status])
+  @@index([trackingCode])
+  @@map("sub_orders")
+}
+
+/// Lưu snapshot tên + giá tại thời điểm mua
+model OrderItem {
+  id          Int     @id @default(autoincrement())
+  subOrderId  Int     @map("sub_order_id")
+  variantId   Int     @map("variant_id")
+  productName String  @map("product_name") @db.VarChar(120)
+  variantName String? @map("variant_name") @db.VarChar(150)
+  skuCode     String  @map("sku_code") @db.VarChar(50)
+  unitPrice   BigInt  @map("unit_price")
+  quantity    Int     @db.SmallInt
+
+  subOrder SubOrder       @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  variant  ProductVariant @relation(fields: [variantId], references: [id])
+  review   Review?
+
+  @@unique([subOrderId, variantId])
+  @@index([variantId])
+  @@map("order_items")
+}
+
+/// Lịch sử trạng thái đơn con (UC-17)
+model OrderStatusHistory {
+  id         Int         @id @default(autoincrement())
+  subOrderId Int         @map("sub_order_id")
+  status     OrderStatus
+  note       String?     @db.VarChar(255)
+  changedBy  Int?        @map("changed_by") // NULL nếu do hệ thống / webhook
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  subOrder      SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  changedByUser User?    @relation(fields: [changedBy], references: [id])
+
+  @@index([subOrderId, createdAt])
+  @@map("order_status_history")
+}
+
+// ---------------------------------------------------------------------
+// 7. THANH TOÁN & TỒN KHO GIỮ CHỖ (UC-13, UC-14)
+// ---------------------------------------------------------------------
+model Payment {
+  id             Int           @id @default(autoincrement())
+  orderId        Int           @map("order_id")
+  method         PaymentMethod
+  amount         BigInt
+  status         PaymentStatus @default(PENDING)
+  gatewayTxnId   String?       @map("gateway_txn_id") @db.VarChar(100)
+  paymentUrl     String?       @map("payment_url") @db.VarChar(1000)
+  idempotencyKey String        @unique @map("idempotency_key") @db.VarChar(100)
+  expiresAt      DateTime?     @map("expires_at") @db.Timestamptz(6) // hạn thanh toán 15 phút
+  paidAt         DateTime?     @map("paid_at") @db.Timestamptz(6)
+  rawWebhook     Json?         @map("raw_webhook") @db.JsonB
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([method, gatewayTxnId]) // NULL được phép trùng trong PostgreSQL
+  @@index([orderId])
+  @@map("payments")
+}
+
+/// Giữ chỗ tồn kho TTL 15 phút
+model StockReservation {
+  id        Int               @id @default(autoincrement())
+  variantId Int               @map("variant_id")
+  orderId   Int               @map("order_id")
+  quantity  Int
+  status    ReservationStatus @default(RESERVED)
+  expiresAt DateTime          @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, variantId])
+  @@map("stock_reservations")
+}
+
+model VoucherUsage {
+  id        Int      @id @default(autoincrement())
+  voucherId Int      @map("voucher_id")
+  userId    Int      @map("user_id")
+  orderId   Int      @map("order_id")
+  usedAt    DateTime @default(now()) @map("used_at") @db.Timestamptz(6)
+
+  voucher Voucher @relation(fields: [voucherId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([voucherId, orderId])
+  @@map("voucher_usages")
+}
+
+// ---------------------------------------------------------------------
+// 8. TRẢ HÀNG / HOÀN TIỀN & ĐÁNH GIÁ
+// ---------------------------------------------------------------------
+model ReturnRequest {
+  id           Int          @id @default(autoincrement())
+  subOrderId   Int          @map("sub_order_id")
+  requestedBy  Int          @map("requested_by")
+  reason       String       @db.VarChar(500)
+  evidenceUrls String[]     @default([]) @map("evidence_urls")
+  status       ReturnStatus @default(REQUESTED)
+  refundAmount BigInt?      @map("refund_amount")
+  resolvedBy   Int?         @map("resolved_by") // Admin giải quyết tranh chấp
+  resolvedNote String?      @map("resolved_note") @db.VarChar(500)
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  subOrder  SubOrder @relation(fields: [subOrderId], references: [id])
+  requester User     @relation("ReturnRequestedBy", fields: [requestedBy], references: [id])
+  resolver  User?    @relation("ReturnResolvedBy", fields: [resolvedBy], references: [id])
+
+  @@index([subOrderId])
+  @@map("return_requests")
+}
+
+/// Mỗi dòng đơn hàng chỉ đánh giá 1 lần
+model Review {
+  id          Int      @id @default(autoincrement())
+  orderItemId Int      @unique @map("order_item_id")
+  userId      Int      @map("user_id")
+  productId   Int      @map("product_id")
+  rating      Int      @db.SmallInt
+  comment     String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@map("reviews")
+}

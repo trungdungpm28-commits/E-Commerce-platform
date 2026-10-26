@@ -284,6 +284,7 @@ model Category {
   isLeaf    Boolean  @default(true) @map("is_leaf")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  slug      String   @unique
 
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
   children Category[] @relation("CategoryTree")
@@ -316,6 +317,7 @@ model Product {
   rejectReason String?       @map("reject_reason") @db.VarChar(500)
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  slug         String?
 
   shop     Shop             @relation(fields: [shopId], references: [id])
   category Category         @relation(fields: [categoryId], references: [id])
@@ -360,6 +362,8 @@ model ProductVariant {
   status        VariantStatus @default(ACTIVE)
   createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  color         String?
+  size          String?
 
   product      Product            @relation(fields: [productId, shopId], references: [id, shopId], onDelete: Cascade)
   cartItems    CartItem[]
